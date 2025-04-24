@@ -1,4 +1,6 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, QHBoxLayout
+from app.ui.add_item_dialog import AddItemDialog
+
 """
 Module: inventory_view
 ----------------------
@@ -49,6 +51,9 @@ class InventoryView(QWidget):
         btn_layout.addStretch()
         self.layout.addLayout(btn_layout)
 
+        # connect the button to the method
+        self.add_button.clicked.connect(self.show_add_dialog)
+
         # Inventory Table
         self.table = QTableWidget()
         self.layout.addWidget(self.table)
@@ -74,3 +79,11 @@ class InventoryView(QWidget):
             for col, value in enumerate(item):
                 # Convert non-string values to string for display
                 self.table.setItem(row, col, QTableWidgetItem(str(value)))
+
+    def show_add_dialog(self):
+        """
+        Dialog
+        """
+        dialog = AddItemDialog(self)
+        if dialog.exec():
+            self.load_items()

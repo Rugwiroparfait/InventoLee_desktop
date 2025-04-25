@@ -103,7 +103,3 @@ inventolee_desktop/
 ## 📎 License
 
 MIT License – feel free to use and modify for your personal or commercial projects.
-
----
-
-Let me know if you want to include screenshots, contribution guidelines, or anything else!

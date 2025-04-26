@@ -72,7 +72,7 @@ inventolee_desktop/
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/yourusername/inventolee_desktop.git
+   git clone https://github.com/Rugwiroparfait/inventolee_desktop.git
    cd inventolee_desktop
    ```
 

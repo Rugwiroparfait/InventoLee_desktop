@@ -1,117 +1,383 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, QHBoxLayout, QMessageBox
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QPushButton, QTableWidget, 
+                              QTableWidgetItem, QHBoxLayout, QMessageBox, QLabel,
+                              QHeaderView, QFrame, QSplitter, QSpacerItem, QSizePolicy)
+from PySide6.QtGui import QColor, QBrush, QFont, QIcon, QPalette, QLinearGradient, QPixmap
+from PySide6.QtCore import Qt, QSize, QPropertyAnimation, QEasingCurve
 from app.ui.add_item_dialog import AddItemDialog
-from app.models.inventory import delete_item_from_db , get_all_items , add_item_to_db, get_item_by_id, update_item_in_db  # Import the function to delete the item
+from app.models.inventory import (delete_item_from_db, get_all_items, add_item_to_db, 
+                                get_item_by_id, update_item_in_db)
 
 """
 Module: inventory_view
 ----------------------
 
-This module defines the `InventoryView` class, which provides a graphical user interface (GUI) for displaying and managing inventory items in a table format.
+This module defines the `InventoryView` class, which provides a graphical user interface (GUI) 
+for displaying and managing inventory items in a colorful, professional table format.
 
 Classes:
 --------
-- InventoryView(QWidget): A QWidget subclass that displays a table of inventory items and provides an "Add Item" button for user interaction.
+- InventoryView(QWidget): A QWidget subclass that displays a table of inventory items with
+  elegant styling and animated buttons for user interaction.
 
 Methods:
 --------
-- __init__(): Initializes the InventoryView widget, sets up the layout, and loads inventory items into the table.
-- load_items(): Fetches inventory data using the `get_all_items` function, populates the table with the data, and sets up column headers.
-
-Attributes:
------------
-- layout (QVBoxLayout): The main vertical layout of the widget.
-- add_button (QPushButton): A button for adding new inventory items.
-- table (QTableWidget): A table widget for displaying inventory items.
+- __init__(): Initializes the InventoryView widget with professional styling.
+- load_items(): Populates the table with inventory data and applies styling.
+- edit_item(): Opens dialog to edit an existing inventory item.
+- delete_item(): Prompts for confirmation and deletes an item.
+- show_add_dialog(): Opens dialog to add a new inventory item.
+- setup_ui_theme(): Sets up the color scheme and styling for the interface.
 
 Dependencies:
 -------------
-- PySide6.QtWidgets: Provides the GUI components such as QWidget, QVBoxLayout, QPushButton, QTableWidget, etc.
-- app.models.inventory.get_all_items: A function that retrieves all inventory items from the data source.
-
-Usage:
-------
-This class is intended to be used as part of a PySide6-based desktop application for managing inventory. It provides a user-friendly interface for viewing and interacting with inventory data.
+- PySide6.QtWidgets: GUI components
+- PySide6.QtGui: Styling and visual elements
+- PySide6.QtCore: Core functionality for animations and properties
+- app.models.inventory: Functions for database operations
 """
-from app.models.inventory import get_all_items
+
+class StyledButton(QPushButton):
+    """
+    Custom styled button with hover effects and optional icon
+    """
+    def __init__(self, text, icon_name=None, color_scheme=None):
+        super().__init__(text)
+        
+        # Default color scheme
+        self.base_color = "#6200EA" if not color_scheme else color_scheme["base"]
+        self.hover_color = "#9D46FF" if not color_scheme else color_scheme["hover"]
+        self.text_color = "#FFFFFF" if not color_scheme else color_scheme["text"]
+        
+        # Apply basic styling
+        self.setFont(QFont("Segoe UI", 9, QFont.Weight.Medium))
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setMinimumHeight(32)
+        
+        # Style sheet
+        self.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {self.base_color};
+                color: {self.text_color};
+                border: none;
+                border-radius: 4px;
+                padding: 6px 12px;
+            }}
+            
+            QPushButton:hover {{
+                background-color: {self.hover_color};
+            }}
+            
+            QPushButton:pressed {{
+                background-color: {self.base_color};
+            }}
+        """)
+        
+        # Set icon if provided
+        if icon_name:
+            self.setIcon(QIcon(f":/icons/{icon_name}.png"))
+            self.setIconSize(QSize(16, 16))
+
 
 class InventoryView(QWidget):
     def __init__(self):
         """
-        Initializes the InventoryView widget.
-        Sets up the layout, adds an "Add Item" button, and loads inventory items into the table.
+        Initializes the InventoryView widget with professional styling.
         """
         super().__init__()
-
+        
+        # Set color palette and theme
+        self.setup_ui_theme()
+        
+        # Main layout
         self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(20, 20, 20, 20)
+        self.layout.setSpacing(15)
         self.setLayout(self.layout)
-
-        # Header / Actions
-        btn_layout = QHBoxLayout()
-        self.add_button = QPushButton("➕ Add Item")
-        btn_layout.addWidget(self.add_button)
-        btn_layout.addStretch()
-        self.layout.addLayout(btn_layout)
-
-        # connect the button to the method
+        
+        # Header section with title and description
+        header_frame = QFrame()
+        header_frame.setObjectName("headerFrame")
+        header_layout = QVBoxLayout(header_frame)
+        
+        # Title and subtitle
+        title_label = QLabel("Inventory Management")
+        title_label.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
+        title_label.setStyleSheet(f"color: {self.colors['primary']};")
+        
+        subtitle_label = QLabel("Manage your items with ease and efficiency")
+        subtitle_label.setFont(QFont("Segoe UI", 10))
+        subtitle_label.setStyleSheet(f"color: {self.colors['text_secondary']};")
+        
+        header_layout.addWidget(title_label)
+        header_layout.addWidget(subtitle_label)
+        self.layout.addWidget(header_frame)
+        
+        # Actions toolbar
+        toolbar_frame = QFrame()
+        toolbar_frame.setObjectName("toolbarFrame")
+        toolbar_frame.setStyleSheet(f"""
+            #toolbarFrame {{
+                background-color: {self.colors['background_light']};
+                border-radius: 8px;
+                padding: 8px;
+            }}
+        """)
+        
+        toolbar_layout = QHBoxLayout(toolbar_frame)
+        toolbar_layout.setContentsMargins(10, 10, 10, 10)
+        
+        # Add item button with custom styling
+        self.add_button = StyledButton("➕ Add Item", color_scheme={
+            "base": self.colors['primary'],
+            "hover": self.colors['primary_light'],
+            "text": "#FFFFFF"
+        })
         self.add_button.clicked.connect(self.show_add_dialog)
-
+        
+        # Search field placeholder - could be expanded in future
+        toolbar_layout.addWidget(self.add_button)
+        toolbar_layout.addStretch()
+        
+        self.layout.addWidget(toolbar_frame)
+        
+        # Table container with shadow effect
+        table_container = QFrame()
+        table_container.setObjectName("tableContainer")
+        table_container.setStyleSheet(f"""
+            #tableContainer {{
+                background-color: {self.colors['background_light']};
+                border-radius: 8px;
+                padding: 1px;
+            }}
+        """)
+        
+        table_layout = QVBoxLayout(table_container)
+        table_layout.setContentsMargins(2, 2, 2, 2)
+        
         # Inventory Table
         self.table = QTableWidget()
-        self.layout.addWidget(self.table)
-
+        self.table.setFont(QFont("Segoe UI", 9))
+        self.table.setAlternatingRowColors(True)
+        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.setShowGrid(True)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.verticalHeader().setVisible(False)
+        
+        # Table styling
+        self.table.setStyleSheet(f"""
+            QTableWidget {{
+                background-color: {self.colors['background_light']};
+                alternate-background-color: {self.colors['background_alt']};
+                border: none;
+                border-radius: 8px;
+                gridline-color: {self.colors['border']};
+            }}
+            
+            QTableWidget::item {{
+                padding: 8px;
+                border-bottom: 1px solid {self.colors['border']};
+            }}
+            
+            QTableWidget::item:selected {{
+                background-color: {self.colors['selection']};
+                color: {self.colors['text_primary']};
+            }}
+            
+            QHeaderView::section {{
+                background-color: {self.colors['header']};
+                color: {self.colors['text_primary']};
+                font-weight: bold;
+                padding: 10px;
+                border: none;
+                border-bottom: 2px solid {self.colors['primary']};
+                border-right: 1px solid {self.colors['border']};
+            }}
+        """)
+        
+        table_layout.addWidget(self.table)
+        self.layout.addWidget(table_container)
+        
+        # Status bar
+        status_bar = QFrame()
+        status_bar.setObjectName("statusBar")
+        status_layout = QHBoxLayout(status_bar)
+        status_layout.setContentsMargins(5, 0, 5, 0)
+        
+        status_label = QLabel("Ready")
+        status_label.setStyleSheet(f"color: {self.colors['text_secondary']};")
+        status_layout.addWidget(status_label)
+        status_layout.addStretch()
+        
+        self.layout.addWidget(status_bar)
+        
+        # Load items into the table
         self.load_items()
+
+    def setup_ui_theme(self):
+        """
+        Sets up the color scheme and styling for the interface
+        """
+        # Color palette
+        self.colors = {
+            'primary': '#5C6BC0',           # Indigo
+            'primary_light': '#8E99F3',      # Light Indigo
+            'primary_dark': '#26418F',       # Dark Indigo
+            'secondary': '#26A69A',          # Teal
+            'secondary_light': '#64D8CB',    # Light Teal
+            'secondary_dark': '#00766C',     # Dark Teal
+            'accent': '#FF7043',             # Deep Orange
+            'background': '#F5F7FA',         # Light Gray
+            'background_light': '#FFFFFF',   # White
+            'background_alt': '#F0F2F5',     # Light Gray Alt
+            'text_primary': '#212121',       # Near Black
+            'text_secondary': '#757575',     # Gray
+            'border': '#E0E0E0',             # Light Gray
+            'header': '#ECEFF1',             # Blue Gray Light
+            'selection': '#E3F2FD',          # Very Light Blue
+            'delete': '#F44336',             # Red
+            'delete_hover': '#EF5350',       # Light Red
+            'edit': '#4CAF50',               # Green
+            'edit_hover': '#66BB6A',         # Light Green
+        }
+        
+        # Set widget background
+        self.setStyleSheet(f"""
+            QWidget {{
+                background-color: {self.colors['background']};
+                color: {self.colors['text_primary']};
+                font-family: 'Segoe UI', 'Arial', sans-serif;
+            }}
+        """)
 
     def load_items(self):
         """
-        Load inventory items into the table widget.
-        This method retrieves all items from the data source using the `get_all_items` function,
-        populates the table with the retrieved data, and sets up the column headers.
+        Load inventory items into the table widget with professional styling.
         """
         # Fetch all items from the data source
-        # and populate the table
         items = get_all_items()
-        headers = ["ID", "Name", "Category", "Size", "Color", "Qty", "Price", "Supplier", "Expiry", "Notes"]
+        headers = ["ID", "Name", "Category", "Size", "Color", "Qty", "Price", "Supplier", "Expiry", "Actions"]
         self.table.setColumnCount(len(headers))
         self.table.setHorizontalHeaderLabels(headers)
         self.table.setRowCount(len(items))
-
+        
+        # Set column widths
+        self.table.setColumnWidth(0, 60)  # ID column
+        self.table.setColumnWidth(4, 80)  # Color column
+        self.table.setColumnWidth(5, 60)  # Qty column
+        self.table.setColumnWidth(9, 150)  # Actions column
+        
+        # Fonts
+        regular_font = QFont("Segoe UI", 9)
+        bold_font = QFont("Segoe UI", 9, QFont.Weight.Bold)
+        
         for row, item in enumerate(items):
             # Populate each row with item data
             for col, value in enumerate(item):
-                # Convert non-string values to string for display
-                self.table.setItem(row, col, QTableWidgetItem(str(value)))
+                if col < len(item):
+                    cell_item = QTableWidgetItem(str(value))
+                    
+                    # Make ID bold
+                    if col == 0:
+                        cell_item.setFont(bold_font)
+                    else:
+                        cell_item.setFont(regular_font)
+                    
+                    # Add color indicator for the Color column
+                    if col == 4:  # Color column
+                        try:
+                            # If the color value is a recognizable color name
+                            color_brush = QBrush(QColor(str(value)))
+                            cell_item.setBackground(color_brush)
+                            
+                            # Make text white or black depending on color brightness
+                            color = QColor(str(value))
+                            if color.lightness() < 128:
+                                cell_item.setForeground(QBrush(QColor("white")))
+                        except:
+                            # If color is not recognizable, just show as text
+                            pass
+                    
+                    # Style quantity - highlight low stock
+                    if col == 5:  # Qty column
+                        qty = int(value) if str(value).isdigit() else 0
+                        if qty <= 5:
+                            cell_item.setForeground(QBrush(QColor("red")))
+                            cell_item.setFont(bold_font)
+                        elif qty <= 10:
+                            cell_item.setForeground(QBrush(QColor("orange")))
+                    
+                    # Format price with currency symbol
+                    if col == 6:  # Price column
+                        try:
+                            price = float(value)
+                            cell_item.setText(f"${price:.2f}")
+                        except:
+                            pass
+                    
+                    self.table.setItem(row, col, cell_item)
 
             # Create Edit and Delete buttons
-            edit_button = QPushButton("✏️ Edit")
-            delete_button = QPushButton("🗑️ Delete")
-
-
-            # Connect each button to its own item ID
+            button_widget = QWidget()
+            button_layout = QHBoxLayout(button_widget)
+            button_layout.setContentsMargins(4, 2, 4, 2)
+            button_layout.setSpacing(6)
+            
             item_id = item[0]
-
+            
+            # Edit button
+            edit_button = StyledButton("✏️ Edit", color_scheme={
+                "base": self.colors['edit'],
+                "hover": self.colors['edit_hover'],
+                "text": "#FFFFFF"
+            })
+            edit_button.setMaximumWidth(80)
             edit_button.clicked.connect(lambda _, id=item_id: self.edit_item(id))
+            
+            # Delete button
+            delete_button = StyledButton("🗑️ Delete", color_scheme={
+                "base": self.colors['delete'],
+                "hover": self.colors['delete_hover'],
+                "text": "#FFFFFF"
+            })
+            delete_button.setMaximumWidth(80)
             delete_button.clicked.connect(lambda _, id=item_id: self.delete_item(id))
-
-            # Add buttons into a layouts
-            button_layout = QHBoxLayout()
+            
             button_layout.addWidget(edit_button)
             button_layout.addWidget(delete_button)
-
-            # Create a widget to hold the buttons
-            button_widget = QWidget()
-            button_widget.setLayout(button_layout)
-
+            
             # Add the button widget to the last column of the table
             self.table.setCellWidget(row, len(headers) - 1, button_widget)
+
     def edit_item(self, item_id):
         """
-        Edit item
+        Edit item with professional dialog and feedback
         """
-
         # Fetch the item details by ID
         item = get_item_by_id(item_id)
         if not item:
-            QMessageBox.warning(self, "Edit Item", f"Item with ID: {item_id} not found.")
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("Edit Item")
+            msg_box.setIcon(QMessageBox.Icon.Warning)
+            msg_box.setText(f"Item with ID: {item_id} not found.")
+            msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+            msg_box.setStyleSheet(f"""
+                QMessageBox {{
+                    background-color: {self.colors['background_light']};
+                    color: {self.colors['text_primary']};
+                }}
+                QPushButton {{
+                    background-color: {self.colors['primary']};
+                    color: white;
+                    border-radius: 4px;
+                    padding: 6px 12px;
+                    min-width: 80px;
+                }}
+                QPushButton:hover {{
+                    background-color: {self.colors['primary_light']};
+                }}
+            """)
+            msg_box.exec()
             return
 
         # Open the AddItemDialog pre-filled with the item's details
@@ -120,28 +386,135 @@ class InventoryView(QWidget):
             # If the dialog is accepted, update the item in the database
             updated_item = dialog.get_item_data()
             update_item_in_db(item_id, updated_item)
-            QMessageBox.information(self, "Edit Item", f"Item with ID: {item_id} updated successfully.")
+            
+            # Success message
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("Success")
+            msg_box.setIcon(QMessageBox.Icon.Information)
+            msg_box.setText(f"Item with ID: {item_id} updated successfully.")
+            msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+            msg_box.setStyleSheet(f"""
+                QMessageBox {{
+                    background-color: {self.colors['background_light']};
+                    color: {self.colors['text_primary']};
+                }}
+                QPushButton {{
+                    background-color: {self.colors['primary']};
+                    color: white;
+                    border-radius: 4px;
+                    padding: 6px 12px;
+                    min-width: 80px;
+                }}
+                QPushButton:hover {{
+                    background-color: {self.colors['primary_light']};
+                }}
+            """)
+            msg_box.exec()
+            
             self.load_items()  # Reload the table to reflect the changes
+
     def delete_item(self, item_id):
         """
-        Delete item
+        Delete item with confirmation and animation
         """
-        reply = QMessageBox.question(self, "Delete Item", f"Are you sure you want to delete item with ID: {item_id}?", QMessageBox.Yes | QMessageBox.No)
+        # Create custom confirmation dialog
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("Confirm Delete")
+        msg_box.setIcon(QMessageBox.Icon.Question)
+        msg_box.setText(f"Are you sure you want to delete item with ID: {item_id}?")
+        msg_box.setInformativeText("This action cannot be undone.")
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        msg_box.setDefaultButton(QMessageBox.StandardButton.No)
+        msg_box.setStyleSheet(f"""
+            QMessageBox {{
+                background-color: {self.colors['background_light']};
+                color: {self.colors['text_primary']};
+            }}
+            QPushButton {{
+                border-radius: 4px;
+                padding: 6px 12px;
+                min-width: 80px;
+            }}
+            QPushButton[text="Yes"] {{
+                background-color: {self.colors['delete']};
+                color: white;
+            }}
+            QPushButton[text="Yes"]:hover {{
+                background-color: {self.colors['delete_hover']};
+            }}
+            QPushButton[text="No"] {{
+                background-color: {self.colors['background_alt']};
+                color: {self.colors['text_primary']};
+                border: 1px solid {self.colors['border']};
+            }}
+            QPushButton[text="No"]:hover {{
+                background-color: {self.colors['background']};
+            }}
+        """)
+        
+        reply = msg_box.exec()
 
-        if reply == QMessageBox.Yes:
-            # Perform the deletion logic here
-            
+        if reply == QMessageBox.StandardButton.Yes:
+            # Perform the deletion logic
             delete_item_from_db(item_id)  # Delete the item from the database
-            QMessageBox.information(self, "Delete Item", f"Item with ID: {item_id} deleted.")
+            
+            # Success message
+            success_box = QMessageBox(self)
+            success_box.setWindowTitle("Success")
+            success_box.setIcon(QMessageBox.Icon.Information)
+            success_box.setText(f"Item with ID: {item_id} deleted successfully.")
+            success_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+            success_box.setStyleSheet(f"""
+                QMessageBox {{
+                    background-color: {self.colors['background_light']};
+                    color: {self.colors['text_primary']};
+                }}
+                QPushButton {{
+                    background-color: {self.colors['primary']};
+                    color: white;
+                    border-radius: 4px;
+                    padding: 6px 12px;
+                    min-width: 80px;
+                }}
+                QPushButton:hover {{
+                    background-color: {self.colors['primary_light']};
+                }}
+            """)
+            success_box.exec()
+            
             self.load_items()  # Reload the table to reflect the changes
 
     def show_add_dialog(self):
         """
-        Dialog
+        Display dialog to add a new item
         """
         dialog = AddItemDialog(self)
         if dialog.exec():
+            new_item = dialog.get_item_data()
+            add_item_to_db(new_item)
+            
+            # Success message
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("Success")
+            msg_box.setIcon(QMessageBox.Icon.Information)
+            msg_box.setText("New item added successfully.")
+            msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+            msg_box.setStyleSheet(f"""
+                QMessageBox {{
+                    background-color: {self.colors['background_light']};
+                    color: {self.colors['text_primary']};
+                }}
+                QPushButton {{
+                    background-color: {self.colors['primary']};
+                    color: white;
+                    border-radius: 4px;
+                    padding: 6px 12px;
+                    min-width: 80px;
+                }}
+                QPushButton:hover {{
+                    background-color: {self.colors['primary_light']};
+                }}
+            """)
+            msg_box.exec()
+            
             self.load_items()
-
-
-

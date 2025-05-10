@@ -28,18 +28,8 @@ def get_all_items():
 
 def add_item_to_db(item):
     """
-    adds a new clothing item to the database.
-    The item parameter should be a tuple containing the following fields:
-    - Name
-    - Category
-    - Size
-    - Color
-    - Quantity
-    - Price
-    - Supplier
-    - Expiry Date
-    - Notes
-    The function inserts the item into the clothing_items table in the database.
+    Adds a new clothing item to the database.
+    The item parameter should be a dictionary containing the item data.
     """
     conn = sqlite3.connect("inventory.db")
     cursor = conn.cursor()
@@ -47,7 +37,10 @@ def add_item_to_db(item):
         INSERT INTO clothing_items (
             name, category, size, color, quantity, price,
             supplier, expiry_date, notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (
+            :name, :category, :size, :color, :quantity, :price,
+            :supplier, :expiry_date, :notes
+        )
     """, item)
     conn.commit()
     conn.close()

@@ -67,3 +67,20 @@ class AddItemDialog(QDialog):
         )
         add_item_to_db(item)
         self.accept()
+    
+    def get_item_data(self):
+        """
+        Collect and return the item data from the dialog fields.
+        Returns a dictionary with the item data.
+        """
+        return {
+            "name": self.name.text(),
+            "category": self.category.text(),
+            "size": self.size.text(),
+            "color": self.color.text(),
+            "quantity": self.quantity.value(),
+            "price": self.price.value(),
+            "supplier": self.supplier.text(),
+            "expiry_date": self.expiry.date().toString("yyyy-MM-dd"),
+            "notes": self.notes.text(),
+        }

@@ -1,14 +1,6 @@
 from PySide6.QtWidgets import QMainWindow, QLabel, QTabWidget
 from app.ui.inventory_view import InventoryView
-
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("InventoLee - Clothing Inventory")
-        self.setGeometry(100, 100, 800, 600)
-
-        label = QLabel("Welcome to InventoLee!", self)
-        label.move(350, 280)
+from app.ui.sales_view import SalesView  # Add this import
 
 class MainWindow(QMainWindow):
     """
@@ -25,4 +17,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.tabs)
 
         self.inventory_tab = InventoryView()
+        self.sales_tab = SalesView()  # Add this line
+        
         self.tabs.addTab(self.inventory_tab, "🧥 Inventory")
+        self.tabs.addTab(self.sales_tab, "💰 Sales Book")  # Add this line

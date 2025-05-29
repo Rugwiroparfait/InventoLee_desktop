@@ -51,7 +51,7 @@ class StyledButton(QPushButton):
         # Apply basic styling
         self.setFont(QFont("Segoe UI", 9, QFont.Weight.Medium))
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setMinimumHeight(32)
+        self.setMinimumHeight(36)
         
         # Style sheet
         self.setStyleSheet(f"""
@@ -152,7 +152,7 @@ class InventoryView(QWidget):
         """)
         
         table_layout = QVBoxLayout(table_container)
-        table_layout.setContentsMargins(2, 2, 2, 2)
+        table_layout.setContentsMargins(5, 5, 5, 5)  # Increased from 2,2,2,2
         
         # Inventory Table
         self.table = QTableWidget()
@@ -175,7 +175,7 @@ class InventoryView(QWidget):
             }}
             
             QTableWidget::item {{
-                padding: 8px;
+                padding: 12px 8px;  /* Increase padding for more space */
                 border-bottom: 1px solid {self.colors['border']};
             }}
             
@@ -188,7 +188,7 @@ class InventoryView(QWidget):
                 background-color: {self.colors['header']};
                 color: {self.colors['text_primary']};
                 font-weight: bold;
-                padding: 10px;
+                padding: 12px;  /* Increase padding for header */
                 border: none;
                 border-bottom: 2px solid {self.colors['primary']};
                 border-right: 1px solid {self.colors['border']};
@@ -265,7 +265,11 @@ class InventoryView(QWidget):
         self.table.setColumnWidth(0, 60)  # ID column
         self.table.setColumnWidth(4, 80)  # Color column
         self.table.setColumnWidth(5, 60)  # Qty column
-        self.table.setColumnWidth(9, 150)  # Actions column
+        self.table.setColumnWidth(9, 160)  # Actions column - slightly wider for buttons
+        
+        # Set row height for all rows
+        for row in range(self.table.rowCount()):
+            self.table.setRowHeight(row, 48)  # Increase row height for better spacing
         
         # Fonts
         regular_font = QFont("Segoe UI", 9)
@@ -320,32 +324,39 @@ class InventoryView(QWidget):
             # Create Edit and Delete buttons
             button_widget = QWidget()
             button_layout = QHBoxLayout(button_widget)
-            button_layout.setContentsMargins(4, 2, 4, 2)
-            button_layout.setSpacing(6)
+            # Remove all margins to ensure buttons fit within cell boundaries
+            button_layout.setContentsMargins(0, 0, 0, 0)  
+            button_layout.setSpacing(4)  # Reduce spacing between buttons
             
             item_id = item[0]
             
-            # Edit button
+            # Edit button - make it smaller to fit
             edit_button = StyledButton("✏️ Edit", color_scheme={
                 "base": self.colors['edit'],
                 "hover": self.colors['edit_hover'],
                 "text": "#FFFFFF"
             })
-            edit_button.setMaximumWidth(80)
+            edit_button.setFixedWidth(75)  # Smaller width
+            edit_button.setFixedHeight(32)  # Smaller height 
             edit_button.clicked.connect(lambda _, id=item_id: self.edit_item(id))
             
-            # Delete button
+            # Delete button - make it smaller to fit
             delete_button = StyledButton("🗑️ Delete", color_scheme={
                 "base": self.colors['delete'],
                 "hover": self.colors['delete_hover'],
                 "text": "#FFFFFF"
             })
-            delete_button.setMaximumWidth(80)
+            delete_button.setFixedWidth(75)  # Smaller width
+            delete_button.setFixedHeight(32)  # Smaller height
             delete_button.clicked.connect(lambda _, id=item_id: self.delete_item(id))
             
+            # Add buttons to layout without stretches that could push them apart
             button_layout.addWidget(edit_button)
             button_layout.addWidget(delete_button)
-            
+
+            # Set fixed size on the container widget to prevent expansion
+            button_widget.setFixedHeight(36)
+
             # Add the button widget to the last column of the table
             self.table.setCellWidget(row, len(headers) - 1, button_widget)
 

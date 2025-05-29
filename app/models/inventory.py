@@ -75,14 +75,22 @@ def update_item_in_db(item_id, updated_item):
     """
     Updates an item in the database.
     :param item_id: The ID of the item to update.
-    :param updated_item: A tuple containing the updated item data.
+    :param updated_item: A dictionary containing the updated item data.
     """
     conn = sqlite3.connect("inventory.db")
     cursor = conn.cursor()
     cursor.execute("""
         UPDATE clothing_items
-        SET name=?, category=?, size=?, color=?, quantity=?, price=?, supplier=?, expiry_date=?, notes=?
-        WHERE id=?
-    """, (*updated_item, item_id))
+        SET name=:name, 
+            category=:category, 
+            size=:size, 
+            color=:color, 
+            quantity=:quantity, 
+            price=:price, 
+            supplier=:supplier, 
+            expiry_date=:expiry_date, 
+            notes=:notes
+        WHERE id=:id
+    """, {**updated_item, 'id': item_id})
     conn.commit()
     conn.close()

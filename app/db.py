@@ -6,13 +6,16 @@ def init_db():
     """
     Initializes the database by creating the necessary tables if they do not already exist.
 
-    This function connects to a SQLite database named "inventory.db" and creates two tables:
+    This function connects to a SQLite database named "inventory.db" and creates three tables:
     1. `clothing_items`: Stores information about clothing items, including their name, category,
        size, color, quantity, price, supplier, expiry date, and additional notes.
     2. `transactions`: Tracks transactions related to clothing items, including the type of transaction
        ("in" for adding items or "out" for removing items), the quantity involved, the date of the
        transaction, and the reason for the transaction. This table has a foreign key relationship
        with the `clothing_items` table.
+    3. `sales`: Records sales transactions, including the date of sale, item sold, quantity, unit price,
+       total amount, payment method, profit, and any expense notes. This table also has a foreign key
+       relationship with the `clothing_items` table.
 
     After creating the tables, the function commits the changes and closes the database connection.
     """
@@ -48,6 +51,22 @@ def init_db():
     );
     """)
 
+    # Create Sales Table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS sales (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL,
+        item_id INTEGER,
+        quantity INTEGER NOT NULL,
+        unit_price REAL NOT NULL,
+        total_amount REAL NOT NULL,
+        payment_method TEXT NOT NULL,
+        profit REAL,
+        expense_notes TEXT,
+        FOREIGN KEY (item_id) REFERENCES clothing_items(id)
+    );
+    """)
+
     conn.commit()
     conn.close()
 
@@ -74,6 +93,16 @@ def seed_data():
         (1, "in", 10, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "Restocked"),
         (2, "out", 2, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "Sold"),
         (3, "out", 1, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "Returned by customer"),
+    ])
+
+    # Sample Sales Data
+    cursor.executemany("""
+    INSERT INTO sales (date, item_id, quantity, unit_price, total_amount, payment_method, profit, expense_notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, [
+        (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 1, 2, 15.99, 31.98, "Cash", 10.00, "None"),
+        (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 2, 1, 39.99, 39.99, "Credit Card", 15.00, "None"),
+        (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 3, 1, 59.99, 59.99, "Cash", 20.00, "Winter sale"),
     ])
 
     conn.commit()

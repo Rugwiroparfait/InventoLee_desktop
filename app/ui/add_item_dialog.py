@@ -5,27 +5,40 @@ from PySide6.QtCore import QDate
 from app.models.inventory import add_item_to_db
 
 class AddItemDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, item=None):
         super().__init__(parent)
-        self.setWindowTitle("Add New Item")
+        self.setWindowTitle("Add New Item" if item is None else "Edit Item")
         self.setMinimumWidth(400)
-
+        self.item_id = None
+        
+        if isinstance(item, int):
+            # If item is an ID, fetch the item data
+            from app.models.inventory import get_item_by_id
+            self.item_data = get_item_by_id(item)
+            self.item_id = item
+        else:
+            self.item_data = item
+        
         layout = QVBoxLayout()
-
+        
         # Fields
         self.name = QLineEdit()
         self.category = QLineEdit()
         self.size = QLineEdit()
         self.color = QLineEdit()
         self.quantity = QSpinBox()
+        self.quantity.setMinimum(0)
+        self.quantity.setMaximum(9999)
         self.price = QDoubleSpinBox()
         self.price.setMaximum(999999)
+        self.price.setDecimals(2)
         self.supplier = QLineEdit()
         self.expiry = QDateEdit()
         self.expiry.setCalendarPopup(True)
         self.expiry.setDate(QDate.currentDate())
         self.notes = QLineEdit()
-
+        
+        # Add fields with labels
         for label, widget in [
             ("Name", self.name),
             ("Category", self.category),
@@ -39,7 +52,11 @@ class AddItemDialog(QDialog):
         ]:
             layout.addWidget(QLabel(label))
             layout.addWidget(widget)
-
+        
+        # Fill in the data if editing an existing item
+        if self.item_data:
+            self.prefill_data()
+        
         # Buttons
         btns = QHBoxLayout()
         self.save_btn = QPushButton("Save")
@@ -47,25 +64,51 @@ class AddItemDialog(QDialog):
         btns.addWidget(self.save_btn)
         btns.addWidget(self.cancel_btn)
         layout.addLayout(btns)
-
         self.setLayout(layout)
-
+        
         self.save_btn.clicked.connect(self.save)
         self.cancel_btn.clicked.connect(self.reject)
-
+    
+    def prefill_data(self):
+        """Pre-fill form fields with existing item data when editing"""
+        if not self.item_data:
+            return
+            
+        self.name.setText(str(self.item_data[1]))  # Name is at index 1
+        self.category.setText(str(self.item_data[2]))
+        self.size.setText(str(self.item_data[3]))
+        self.color.setText(str(self.item_data[4]))
+        self.quantity.setValue(int(self.item_data[5]))
+        self.price.setValue(float(self.item_data[6]))
+        self.supplier.setText(str(self.item_data[7]))
+        
+        # Handle expiry date
+        try:
+            expiry_text = self.item_data[8]
+            if expiry_text:
+                date = QDate.fromString(expiry_text, "yyyy-MM-dd")
+                if date.isValid():
+                    self.expiry.setDate(date)
+        except:
+            pass
+            
+        # Notes
+        if len(self.item_data) > 9 and self.item_data[9]:
+            self.notes.setText(str(self.item_data[9]))
+    
     def save(self):
-        item = (
-            self.name.text(),
-            self.category.text(),
-            self.size.text(),
-            self.color.text(),
-            self.quantity.value(),
-            self.price.value(),
-            self.supplier.text(),
-            self.expiry.date().toString("yyyy-MM-dd"),
-            self.notes.text(),
-        )
-        add_item_to_db(item)
+        """Save either updates an existing item or adds a new one"""
+        data = self.get_item_data()
+        
+        if self.item_id:
+            # Update existing item
+            from app.models.inventory import update_item_in_db
+            update_item_in_db(self.item_id, data)
+        else:
+            # Add new item
+            from app.models.inventory import add_item_to_db
+            add_item_to_db(data)
+            
         self.accept()
     
     def get_item_data(self):

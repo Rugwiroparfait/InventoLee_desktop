@@ -180,30 +180,42 @@ class SalesView(QWidget):
         main_layout.addWidget(self.tabs)
     
     def setup_ui_theme(self):
-        # Color palette (same as inventory view for consistency)
+        """
+        Sets up an elegant color scheme and styling for the interface
+        """
+        # Elegant color palette
         self.colors = {
-            'primary': '#5C6BC0',           # Indigo
-            'primary_light': '#8E99F3',      # Light Indigo
-            'primary_dark': '#26418F',       # Dark Indigo
-            'secondary': '#26A69A',          # Teal
-            'secondary_light': '#64D8CB',    # Light Teal
-            'secondary_dark': '#00766C',     # Dark Teal
-            'accent': '#FF7043',             # Deep Orange
-            'background': '#F5F7FA',         # Light Gray
-            'background_light': '#FFFFFF',   # White
-            'background_alt': '#F0F2F5',     # Light Gray Alt
-            'text_primary': '#212121',       # Near Black
-            'text_secondary': '#757575',     # Gray
-            'border': '#E0E0E0',             # Light Gray
-            'header': '#ECEFF1',             # Blue Gray Light
-            'selection': '#E3F2FD',          # Very Light Blue
-            'delete': '#F44336',             # Red
-            'delete_hover': '#EF5350',       # Light Red
-            'edit': '#4CAF50',               # Green
-            'edit_hover': '#66BB6A',         # Light Green
-            'profit': '#4CAF50',             # Green for profit
-            'loss': '#F44336',               # Red for loss
+            'primary': '#4A6FA5',           # Slate Blue
+            'primary_light': '#6B8EB8',     # Lighter Slate Blue
+            'primary_dark': '#304C74',      # Darker Slate Blue
+            'secondary': '#3D7068',         # Teal
+            'secondary_light': '#5E9088',   # Lighter Teal
+            'secondary_dark': '#28504A',    # Darker Teal
+            'accent': '#D28A7A',            # Terracotta
+            'background': '#F4F1ED',        # Eggshell
+            'background_light': '#FAF8F5',  # Ivory (no pure white)
+            'background_alt': '#ECE8E3',    # Light Taupe
+            'text_primary': '#2D3142',      # Dark Charcoal Blue
+            'text_secondary': '#6B717E',    # Medium Slate Gray
+            'border': '#D5CEC8',            # Light Taupe
+            'header': '#EAE6E1',            # Warmer Light Taupe
+            'selection': '#E3E9F2',         # Very Light Blue Gray
+            'delete': '#B95C50',            # Warm Red
+            'delete_hover': '#CF7A70',      # Light Warm Red
+            'edit': '#508569',              # Forest Green
+            'edit_hover': '#6CA388',        # Light Forest Green
+            'profit': '#508569',            # Forest Green
+            'loss': '#B95C50',              # Warm Red
         }
+        
+        # Set widget background
+        self.setStyleSheet(f"""
+            QWidget {{
+                background-color: {self.colors['background']};
+                color: {self.colors['text_primary']};
+                font-family: 'Segoe UI', 'Arial', sans-serif;
+            }}
+        """)
     
     def setup_sales_table(self):
         layout = QVBoxLayout(self.sales_table_widget)
@@ -474,19 +486,10 @@ class SalesView(QWidget):
         
         # Sales trend chart
         bars = ax1.bar(periods, sales, color=self.colors['primary'])
-        ax1.set_title('Sales Trend', fontweight='bold', fontsize=12)
-        ax1.set_ylabel('Total Sales ($)')
-        
-        # Add value labels
-        for bar in bars:
-            height = bar.get_height()
-            ax1.annotate(f'${height:.0f}',
-                         xy=(bar.get_x() + bar.get_width() / 2, height),
-                         xytext=(0, 3),  # 3 points vertical offset
-                         textcoords="offset points",
-                         ha='center', va='bottom',
-                         fontsize=8)
-        
+        ax1.set_title('Sales Trend', fontweight='bold', fontsize=12, color=self.colors['text_primary'])
+        ax1.set_ylabel('Total Sales ($)', color=self.colors['text_secondary'])
+        ax1.tick_params(colors=self.colors['text_secondary'])
+
         # Profit margin chart
         margins = [(p/s*100) if s > 0 else 0 for p, s in zip(profits, sales)]
         colors = [self.colors['profit'] if m >= 0 else self.colors['loss'] for m in margins]
@@ -504,6 +507,14 @@ class SalesView(QWidget):
                         textcoords="offset points",
                         ha='center', va='bottom',
                         fontsize=8)
+        
+        # Set better background color for chart
+        self.figure.set_facecolor(self.colors['background'])
+        for ax in [ax1, ax2]:
+            ax.set_facecolor(self.colors['background_light'])
+            ax.spines['bottom'].set_color(self.colors['border'])
+            ax.spines['left'].set_color(self.colors['border'])
+            ax.tick_params(colors=self.colors['text_secondary'])
         
         # Refresh canvas
         self.canvas.draw()
@@ -757,8 +768,8 @@ class SalesView(QWidget):
                     background-color: {self.colors['primary']};
                     color: white;
                     border-radius: 4px;
-                    padding: 6px 12px;
-                    min-width: 80px;
+                    padding: 8px 15px;
+                    min-width: 85px;
                 }}
                 QPushButton:hover {{
                     background-color: {self.colors['primary_light']};

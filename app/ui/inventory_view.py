@@ -216,29 +216,31 @@ class InventoryView(QWidget):
 
     def setup_ui_theme(self):
         """
-        Sets up the color scheme and styling for the interface
+        Sets up an elegant color scheme and styling for the interface
         """
-        # Color palette
+        # Elegant color palette
         self.colors = {
-            'primary': '#5C6BC0',           # Indigo
-            'primary_light': '#8E99F3',      # Light Indigo
-            'primary_dark': '#26418F',       # Dark Indigo
-            'secondary': '#26A69A',          # Teal
-            'secondary_light': '#64D8CB',    # Light Teal
-            'secondary_dark': '#00766C',     # Dark Teal
-            'accent': '#FF7043',             # Deep Orange
-            'background': '#F5F7FA',         # Light Gray
-            'background_light': '#FFFFFF',   # White
-            'background_alt': '#F0F2F5',     # Light Gray Alt
-            'text_primary': '#212121',       # Near Black
-            'text_secondary': '#757575',     # Gray
-            'border': '#E0E0E0',             # Light Gray
-            'header': '#ECEFF1',             # Blue Gray Light
-            'selection': '#E3F2FD',          # Very Light Blue
-            'delete': '#F44336',             # Red
-            'delete_hover': '#EF5350',       # Light Red
-            'edit': '#4CAF50',               # Green
-            'edit_hover': '#66BB6A',         # Light Green
+            'primary': '#4A6FA5',           # Slate Blue
+            'primary_light': '#6B8EB8',     # Lighter Slate Blue
+            'primary_dark': '#304C74',      # Darker Slate Blue
+            'secondary': '#3D7068',         # Teal
+            'secondary_light': '#5E9088',   # Lighter Teal
+            'secondary_dark': '#28504A',    # Darker Teal
+            'accent': '#D28A7A',            # Terracotta
+            'background': '#F4F1ED',        # Eggshell
+            'background_light': '#FAF8F5',  # Ivory (no pure white)
+            'background_alt': '#ECE8E3',    # Light Taupe
+            'text_primary': '#2D3142',      # Dark Charcoal Blue
+            'text_secondary': '#6B717E',    # Medium Slate Gray
+            'border': '#D5CEC8',            # Light Taupe
+            'header': '#EAE6E1',            # Warmer Light Taupe
+            'selection': '#E3E9F2',         # Very Light Blue Gray
+            'delete': '#B95C50',            # Warm Red
+            'delete_hover': '#CF7A70',      # Light Warm Red
+            'edit': '#508569',              # Forest Green
+            'edit_hover': '#6CA388',        # Light Forest Green
+            'profit': '#508569',            # Forest Green
+            'loss': '#B95C50',              # Warm Red
         }
         
         # Set widget background

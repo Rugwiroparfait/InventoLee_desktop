@@ -11,6 +11,8 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
+from app.ui.google_sheets_dialog import GoogleSheetsDialog
+from app.utils.google_sheets_sync import GoogleSheetsSync
 
 class AddSaleDialog(QDialog):
     def __init__(self, parent=None):
@@ -341,6 +343,16 @@ class SalesView(QWidget):
         """)
         clear_all_btn.clicked.connect(self.clear_all_entries)
         
+        # Google Sheets sync button
+        sheets_btn = QPushButton("🔄 Sync to Sheets")
+        sheets_btn.setStyleSheet(f"""
+            background-color: {self.colors['secondary']};
+            color: white;
+            border-radius: 4px;
+            padding: 6px 12px;
+""")
+        sheets_btn.clicked.connect(self.sync_sales_to_sheets)
+        
         controls_layout.addWidget(date_label)
         controls_layout.addWidget(self.start_date)
         controls_layout.addWidget(QLabel("to"))
@@ -350,6 +362,7 @@ class SalesView(QWidget):
         controls_layout.addWidget(add_sale_btn)
         controls_layout.addWidget(clear_last_btn)
         controls_layout.addWidget(clear_all_btn)
+        controls_layout.addWidget(sheets_btn)
         
         layout.addWidget(controls_frame)
         
@@ -932,3 +945,30 @@ class SalesView(QWidget):
                     self.load_summary()
         elif ok:
             QMessageBox.warning(self, "Cancelled", "Delete operation cancelled - confirmation text didn't match.")
+    
+    def sync_sales_to_sheets(self):
+        """Sync current filtered sales data to Google Sheets"""
+        # Get current date range
+        start_date = self.start_date.date().toString("yyyy-MM-dd")
+        end_date = self.end_date.date().toString("yyyy-MM-dd")
+        
+        # Initialize Google Sheets sync
+        sheets_sync = GoogleSheetsSync()
+        
+        if not sheets_sync.is_configured():
+            # Show settings dialog if not configured
+            dialog = GoogleSheetsDialog(self)
+            result = dialog.exec()
+            if result != QDialog.DialogCode.Accepted:
+                return
+            
+            # Reinitialize with new settings
+            sheets_sync = GoogleSheetsSync()
+        
+        # Sync data
+        success, message = sheets_sync.sync_sales(start_date, end_date)
+        
+        if success:
+            QMessageBox.information(self, "Sync Successful", message)
+        else:
+            QMessageBox.warning(self, "Sync Failed", message)

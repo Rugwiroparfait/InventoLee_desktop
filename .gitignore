@@ -1,1 +1,3 @@
 venv/
+app/utils/sheets_config.json
+app/utils/credentials.json

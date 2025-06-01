@@ -6,6 +6,7 @@ from PySide6.QtCore import Qt, QSize, QPropertyAnimation, QEasingCurve
 from app.ui.add_item_dialog import AddItemDialog
 from app.models.inventory import (delete_item_from_db, get_all_items, add_item_to_db, 
                                 get_item_by_id, update_item_in_db)
+from app.ui.google_sheets_dialog import GoogleSheetsDialog
 
 """
 Module: inventory_view
@@ -133,6 +134,22 @@ class InventoryView(QWidget):
             "text": "#FFFFFF"
         })
         self.add_button.clicked.connect(self.show_add_dialog)
+        
+        # Google Sheets sync button
+        self.sheets_button = QPushButton("🔄 Google Sheets")
+        self.sheets_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {self.colors['secondary']};
+                color: white;
+                border-radius: 4px;
+                padding: 6px 12px;
+            }}
+            QPushButton:hover {{
+                background-color: {self.colors['secondary_light']};
+            }}
+        """)
+        self.sheets_button.clicked.connect(self.show_sheets_dialog)
+        toolbar_layout.addWidget(self.sheets_button)
         
         # Search field placeholder - could be expanded in future
         toolbar_layout.addWidget(self.add_button)
@@ -519,3 +536,8 @@ class InventoryView(QWidget):
             msg_box.exec()
             
             self.load_items()
+
+    def show_sheets_dialog(self):
+        """Show dialog for Google Sheets integration configuration"""
+        dialog = GoogleSheetsDialog(self)
+        dialog.exec()

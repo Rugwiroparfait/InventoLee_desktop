@@ -22,3 +22,5 @@ setuptools==79.0.1
 shiboken6==6.9.0
 six==1.17.0
 tzdata==2025.2
+gspread>=5.10.0
+oauth2client>=4.1.3

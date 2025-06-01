@@ -25,7 +25,7 @@ class AddItemDialog(QDialog):
         self.name = QLineEdit()
         self.category = QLineEdit()
         self.size = QLineEdit()
-        self.color = QLineEdit()
+        self.description = QLineEdit()  # Changed from color to description
         self.quantity = QSpinBox()
         self.quantity.setMinimum(0)
         self.quantity.setMaximum(9999)
@@ -33,9 +33,9 @@ class AddItemDialog(QDialog):
         self.price.setMaximum(999999)
         self.price.setDecimals(2)
         self.supplier = QLineEdit()
-        self.expiry = QDateEdit()
-        self.expiry.setCalendarPopup(True)
-        self.expiry.setDate(QDate.currentDate())
+        self.entry_date = QDateEdit()  # Changed from expiry to entry_date
+        self.entry_date.setCalendarPopup(True)
+        self.entry_date.setDate(QDate.currentDate())
         self.notes = QLineEdit()
         
         # Add fields with labels
@@ -43,11 +43,11 @@ class AddItemDialog(QDialog):
             ("Name", self.name),
             ("Category", self.category),
             ("Size", self.size),
-            ("Color", self.color),
+            ("Description", self.description),  # Changed label from Color to Description
             ("Quantity", self.quantity),
             ("Price", self.price),
             ("Supplier", self.supplier),
-            ("Expiry Date", self.expiry),
+            ("Entry Date", self.entry_date),  # Changed label from Expiry Date to Entry Date
             ("Notes", self.notes),
         ]:
             layout.addWidget(QLabel(label))
@@ -74,21 +74,21 @@ class AddItemDialog(QDialog):
         if not self.item_data:
             return
             
-        self.name.setText(str(self.item_data[1]))  # Name is at index 1
+        self.name.setText(str(self.item_data[1]))
         self.category.setText(str(self.item_data[2]))
         self.size.setText(str(self.item_data[3]))
-        self.color.setText(str(self.item_data[4]))
+        self.description.setText(str(self.item_data[4]))  # Changed from color to description
         self.quantity.setValue(int(self.item_data[5]))
         self.price.setValue(float(self.item_data[6]))
         self.supplier.setText(str(self.item_data[7]))
         
-        # Handle expiry date
+        # Handle entry date
         try:
-            expiry_text = self.item_data[8]
-            if expiry_text:
-                date = QDate.fromString(expiry_text, "yyyy-MM-dd")
+            entry_date_text = self.item_data[8]
+            if entry_date_text:
+                date = QDate.fromString(entry_date_text, "yyyy-MM-dd")
                 if date.isValid():
-                    self.expiry.setDate(date)
+                    self.entry_date.setDate(date)
         except:
             pass
             
@@ -120,10 +120,10 @@ class AddItemDialog(QDialog):
             "name": self.name.text(),
             "category": self.category.text(),
             "size": self.size.text(),
-            "color": self.color.text(),
+            "description": self.description.text(),  # Changed from color to description
             "quantity": self.quantity.value(),
             "price": self.price.value(),
             "supplier": self.supplier.text(),
-            "expiry_date": self.expiry.date().toString("yyyy-MM-dd"),
+            "entry_date": self.entry_date.date().toString("yyyy-MM-dd"),  # Changed from expiry_date to entry_date
             "notes": self.notes.text(),
         }

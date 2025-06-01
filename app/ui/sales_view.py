@@ -33,10 +33,10 @@ class AddSaleDialog(QDialog):
         self.date_edit.setCalendarPopup(True)
         layout.addRow("Date:", self.date_edit)
         
-        # Item selection
+        # Item selection - update the displayed text to include description instead of color
         self.item_combo = QComboBox()
         for item in self.items:
-            self.item_combo.addItem(f"{item[1]} (ID: {item[0]}, Stock: {item[5]}, Cost: ${item[6]:.2f})", item[0])
+            self.item_combo.addItem(f"{item[1]} - {item[4]} (ID: {item[0]}, Stock: {item[5]}, Cost: ${item[6]:.2f})", item[0])
         self.item_combo.currentIndexChanged.connect(self.update_price)
         layout.addRow("Item:", self.item_combo)
         

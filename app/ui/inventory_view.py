@@ -258,20 +258,21 @@ class InventoryView(QWidget):
         """
         # Fetch all items from the data source
         items = get_all_items()
-        headers = ["ID", "Name", "Category", "Size", "Color", "Qty", "Price", "Supplier", "Expiry", "Actions"]
+        headers = ["ID", "Name", "Category", "Size", "Description", "Qty", "Price", "Supplier", "Entry Date", "Actions"]
         self.table.setColumnCount(len(headers))
         self.table.setHorizontalHeaderLabels(headers)
         self.table.setRowCount(len(items))
         
         # Set column widths
         self.table.setColumnWidth(0, 60)  # ID column
-        self.table.setColumnWidth(4, 80)  # Color column
+        self.table.setColumnWidth(4, 180)  # Description column - wider for more text
         self.table.setColumnWidth(5, 60)  # Qty column
-        self.table.setColumnWidth(9, 160)  # Actions column - slightly wider for buttons
+        self.table.setColumnWidth(8, 100)  # Entry Date column
+        self.table.setColumnWidth(9, 160)  # Actions column
         
         # Set row height for all rows
         for row in range(self.table.rowCount()):
-            self.table.setRowHeight(row, 48)  # Increase row height for better spacing
+            self.table.setRowHeight(row, 48)
         
         # Fonts
         regular_font = QFont("Segoe UI", 9)
@@ -289,20 +290,7 @@ class InventoryView(QWidget):
                     else:
                         cell_item.setFont(regular_font)
                     
-                    # Add color indicator for the Color column
-                    if col == 4:  # Color column
-                        try:
-                            # If the color value is a recognizable color name
-                            color_brush = QBrush(QColor(str(value)))
-                            cell_item.setBackground(color_brush)
-                            
-                            # Make text white or black depending on color brightness
-                            color = QColor(str(value))
-                            if color.lightness() < 128:
-                                cell_item.setForeground(QBrush(QColor("white")))
-                        except:
-                            # If color is not recognizable, just show as text
-                            pass
+                    # No more special coloring for the color column since it's now description
                     
                     # Style quantity - highlight low stock
                     if col == 5:  # Qty column

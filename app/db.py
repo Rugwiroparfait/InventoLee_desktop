@@ -29,11 +29,11 @@ def init_db():
         name TEXT NOT NULL,
         category TEXT,
         size TEXT,
-        color TEXT,
+        description TEXT,  -- Changed from color to description
         quantity INTEGER DEFAULT 0,
         price REAL,
         supplier TEXT,
-        expiry_date TEXT,
+        entry_date TEXT,   -- Changed from expiry_date to entry_date
         notes TEXT
     );
     """)
@@ -75,14 +75,14 @@ def seed_data():
     conn = sqlite3.connect("inventory.db")
     cursor = conn.cursor()
 
-    # Sample Inventory Items
+    # Sample Inventory Items with updated fields
     cursor.executemany("""
-    INSERT INTO clothing_items (name, category, size, color, quantity, price, supplier, expiry_date, notes)
+    INSERT INTO clothing_items (name, category, size, description, quantity, price, supplier, entry_date, notes)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, [
-        ("T-shirt", "Clothing", "M", "Red", 10, 15.99, "Supplier A", "2025-12-01", "Best seller"),
-        ("Jeans", "Clothing", "L", "Blue", 5, 39.99, "Supplier B", "2026-05-01", "High quality denim"),
-        ("Jacket", "Clothing", "S", "Black", 3, 59.99, "Supplier C", "2024-11-15", "Winter wear"),
+        ("T-shirt", "Clothing", "M", "Cotton round neck casual tee", 10, 15.99, "Supplier A", datetime.now().strftime('%Y-%m-%d'), "Best seller"),
+        ("Jeans", "Clothing", "L", "Blue denim straight cut", 5, 39.99, "Supplier B", datetime.now().strftime('%Y-%m-%d'), "High quality denim"),
+        ("Jacket", "Clothing", "S", "Black leather with zipper", 3, 59.99, "Supplier C", datetime.now().strftime('%Y-%m-%d'), "Winter wear"),
     ])
 
     # Sample Transactions

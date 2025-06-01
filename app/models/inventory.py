@@ -10,14 +10,13 @@ def get_all_items():
     - Name
     - Category
     - Size
-    - Color
+    - Description (changed from Color)
     - Quantity
     - Price
     - Supplier
-    - Expiry Date
+    - Entry Date (changed from Expiry Date)
     - Notes
     """
-
     conn = sqlite3.connect("inventory.db")
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM clothing_items")
@@ -33,15 +32,34 @@ def add_item_to_db(item):
     """
     conn = sqlite3.connect("inventory.db")
     cursor = conn.cursor()
+    
+    # Check if a similar item already exists
     cursor.execute("""
-        INSERT INTO clothing_items (
-            name, category, size, color, quantity, price,
-            supplier, expiry_date, notes
-        ) VALUES (
-            :name, :category, :size, :color, :quantity, :price,
-            :supplier, :expiry_date, :notes
-        )
-    """, item)
+        SELECT id FROM clothing_items 
+        WHERE name=? AND description=? AND size=?
+    """, (item['name'], item['description'], item['size']))
+    
+    existing = cursor.fetchone()
+    
+    if existing:
+        # Item exists, maybe update quantity instead?
+        cursor.execute("""
+            UPDATE clothing_items
+            SET quantity = quantity + ?
+            WHERE id = ?
+        """, (item['quantity'], existing[0]))
+    else:
+        # Insert new item
+        cursor.execute("""
+            INSERT INTO clothing_items (
+                name, category, size, description, quantity, price,
+                supplier, entry_date, notes
+            ) VALUES (
+                :name, :category, :size, :description, :quantity, :price,
+                :supplier, :entry_date, :notes
+            )
+        """, item)
+    
     conn.commit()
     conn.close()
 
@@ -84,11 +102,11 @@ def update_item_in_db(item_id, updated_item):
         SET name=:name, 
             category=:category, 
             size=:size, 
-            color=:color, 
+            description=:description, 
             quantity=:quantity, 
             price=:price, 
             supplier=:supplier, 
-            expiry_date=:expiry_date, 
+            entry_date=:entry_date, 
             notes=:notes
         WHERE id=:id
     """, {**updated_item, 'id': item_id})

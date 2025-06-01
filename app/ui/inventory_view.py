@@ -146,7 +146,7 @@ class InventoryView(QWidget):
         table_container.setStyleSheet(f"""
             #tableContainer {{
                 background-color: {self.colors['background_light']};
-                border-radius: 8px;
+                border-radius: 8px;p
                 padding: 1px;
             }}
         """)

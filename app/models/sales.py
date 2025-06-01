@@ -6,13 +6,32 @@ def add_sale(sale_data):
     Add a new sale record to the database.
     
     :param sale_data: Dictionary containing sale details
+    :return: ID of the newly added sale
     """
     conn = sqlite3.connect("inventory.db")
     cursor = conn.cursor()
     
+    # First get the current item data to calculate profit if not provided
+    cursor.execute("""
+        SELECT price FROM clothing_items WHERE id = ?
+    """, (sale_data['item_id'],))
+    
+    item_data = cursor.fetchone()
+    if not item_data:
+        conn.close()
+        raise ValueError(f"Item with ID {sale_data['item_id']} not found")
+    
+    # Calculate cost price (from inventory)
+    purchase_price = item_data[0]
+    
     # Calculate total amount if not provided
     if 'total_amount' not in sale_data:
         sale_data['total_amount'] = sale_data['quantity'] * sale_data['unit_price']
+    
+    # Calculate profit if not explicitly set
+    if 'profit' not in sale_data or sale_data['profit'] is None:
+        # Profit = (sale price - purchase price) * quantity
+        sale_data['profit'] = (sale_data['unit_price'] - purchase_price) * sale_data['quantity']
     
     cursor.execute("""
         INSERT INTO sales (
@@ -24,6 +43,8 @@ def add_sale(sale_data):
         )
     """, sale_data)
     
+    sale_id = cursor.lastrowid
+    
     # Update inventory quantity
     cursor.execute("""
         UPDATE clothing_items
@@ -33,6 +54,7 @@ def add_sale(sale_data):
     
     conn.commit()
     conn.close()
+    return sale_id
 
 def get_all_sales(start_date=None, end_date=None):
     """

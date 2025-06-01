@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTableWidget,
                               QTableWidgetItem, QLabel, QComboBox, QDateEdit, QMessageBox,
                               QFrame, QHeaderView, QSpinBox, QDoubleSpinBox, QDialog, QFormLayout,
-                              QLineEdit, QTabWidget, QStackedWidget, QSplitter)
+                              QLineEdit, QTabWidget, QStackedWidget, QSplitter, QCheckBox)
 from PySide6.QtGui import QFont, QColor, QBrush
 from PySide6.QtCore import Qt, QDate
 from datetime import datetime, timedelta
@@ -21,6 +21,9 @@ class AddSaleDialog(QDialog):
         # Get inventory items for dropdown
         self.items = get_all_items()
         
+        # Store the purchase price (from inventory)
+        self.purchase_price = 0.0
+        
         layout = QFormLayout()
         self.setLayout(layout)
         
@@ -33,7 +36,7 @@ class AddSaleDialog(QDialog):
         # Item selection
         self.item_combo = QComboBox()
         for item in self.items:
-            self.item_combo.addItem(f"{item[1]} (ID: {item[0]}, Stock: {item[5]})", item[0])
+            self.item_combo.addItem(f"{item[1]} (ID: {item[0]}, Stock: {item[5]}, Cost: ${item[6]:.2f})", item[0])
         self.item_combo.currentIndexChanged.connect(self.update_price)
         layout.addRow("Item:", self.item_combo)
         
@@ -44,13 +47,32 @@ class AddSaleDialog(QDialog):
         self.quantity.valueChanged.connect(self.calculate_total)
         layout.addRow("Quantity:", self.quantity)
         
-        # Unit price
+        # Purchase price display (read-only)
+        self.purchase_price_display = QDoubleSpinBox()
+        self.purchase_price_display.setMinimum(0.0)
+        self.purchase_price_display.setMaximum(9999.99)
+        self.purchase_price_display.setDecimals(2)
+        self.purchase_price_display.setReadOnly(True)
+        self.purchase_price_display.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
+        self.purchase_price_display.setStyleSheet("background-color: #ECE8E3;")
+        layout.addRow("Purchase Price ($):", self.purchase_price_display)
+        
+        # Selling price (what the customer pays)
         self.price = QDoubleSpinBox()
         self.price.setMinimum(0.01)
         self.price.setMaximum(9999.99)
         self.price.setDecimals(2)
         self.price.valueChanged.connect(self.calculate_total)
-        layout.addRow("Unit Price ($):", self.price)
+        layout.addRow("Selling Price ($):", self.price)
+        
+        # Add pricing information labels
+        purchase_info = QLabel("↑ This is what you paid for the item (from inventory)")
+        purchase_info.setStyleSheet("color: #6B717E; font-size: 9pt; font-style: italic;")
+        layout.addRow("", purchase_info)
+        
+        selling_info = QLabel("↑ This is what the customer will pay")
+        selling_info.setStyleSheet("color: #6B717E; font-size: 9pt; font-style: italic;")
+        layout.addRow("", selling_info)
         
         # Total amount (calculated)
         self.total = QDoubleSpinBox()
@@ -58,6 +80,7 @@ class AddSaleDialog(QDialog):
         self.total.setMaximum(999999.99)
         self.total.setDecimals(2)
         self.total.setReadOnly(True)
+        self.total.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
         layout.addRow("Total Amount ($):", self.total)
         
         # Payment method
@@ -65,12 +88,20 @@ class AddSaleDialog(QDialog):
         self.payment_method.addItems(["Cash", "Card", "Mobile Money", "Bank Transfer", "Other"])
         layout.addRow("Payment Method:", self.payment_method)
         
-        # Profit (optional)
+        # Profit (calculated automatically)
         self.profit = QDoubleSpinBox()
         self.profit.setMinimum(-9999.99)  # Allow negative for losses
         self.profit.setMaximum(9999.99)
         self.profit.setDecimals(2)
+        self.profit.setReadOnly(True)
+        self.profit.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
         layout.addRow("Profit ($):", self.profit)
+        
+        # Auto-calculate profit checkbox
+        self.auto_calculate_checkbox = QCheckBox("Auto-calculate profit")
+        self.auto_calculate_checkbox.setChecked(True)
+        self.auto_calculate_checkbox.stateChanged.connect(self.toggle_profit_edit)
+        layout.addRow("", self.auto_calculate_checkbox)
         
         # Notes
         self.notes = QLineEdit()
@@ -90,21 +121,49 @@ class AddSaleDialog(QDialog):
         
         # Initialize with first item
         self.update_price()
+    
+    def toggle_profit_edit(self, state):
+        """Toggle whether profit is auto-calculated or manually entered"""
+        is_auto = state == Qt.CheckState.Checked.value
+        self.profit.setReadOnly(is_auto)
+        self.profit.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons if is_auto else QDoubleSpinBox.ButtonSymbols.UpDownArrows)
         
+        # Update calculation if turning auto back on
+        if is_auto:
+            self.calculate_total()
+    
     def update_price(self):
+        """Update prices when item selection changes"""
         # Get selected item ID
         item_id = self.item_combo.currentData()
         if item_id:
             item = get_item_by_id(item_id)
             if item and len(item) > 6:
-                self.price.setValue(item[6])  # Set price from inventory
+                # Store the purchase price from inventory
+                self.purchase_price = item[6]
+                self.purchase_price_display.setValue(self.purchase_price)
+                
+                # Set initial selling price to match purchase price (can be adjusted)
+                self.price.setValue(item[6] * 1.3)  # Default 30% markup
+                
+                # Calculate total and profit
                 self.calculate_total()
     
     def calculate_total(self):
-        total = self.quantity.value() * self.price.value()
+        """Calculate total amount and profit"""
+        quantity = self.quantity.value()
+        selling_price = self.price.value()
+        total = quantity * selling_price
         self.total.setValue(total)
+        
+        # Calculate profit if auto-calculate is checked
+        if self.auto_calculate_checkbox.isChecked():
+            # Profit = (Selling Price - Purchase Price) × Quantity
+            profit = (selling_price - self.purchase_price) * quantity
+            self.profit.setValue(profit)
     
     def save_sale(self):
+        """Save the sale to the database"""
         # Get the selected item ID
         item_id = self.item_combo.currentData()
         
@@ -123,7 +182,7 @@ class AddSaleDialog(QDialog):
             'unit_price': self.price.value(),
             'total_amount': self.total.value(),
             'payment_method': self.payment_method.currentText(),
-            'profit': self.profit.value() if self.profit.value() != 0 else None,
+            'profit': self.profit.value(),
             'expense_notes': self.notes.text()
         }
         
@@ -490,6 +549,16 @@ class SalesView(QWidget):
         ax1.set_ylabel('Total Sales ($)', color=self.colors['text_secondary'])
         ax1.tick_params(colors=self.colors['text_secondary'])
 
+        # Add value labels to the sales bars too
+        for bar in bars:
+            height = bar.get_height()
+            ax1.annotate(f'${height:.0f}',
+                        xy=(bar.get_x() + bar.get_width() / 2, height),
+                        xytext=(0, 3),  # 3 points vertical offset
+                        textcoords="offset points",
+                        ha='center', va='bottom',
+                        fontsize=8)
+
         # Profit margin chart
         margins = [(p/s*100) if s > 0 else 0 for p, s in zip(profits, sales)]
         colors = [self.colors['profit'] if m >= 0 else self.colors['loss'] for m in margins]
@@ -587,9 +656,19 @@ class SalesView(QWidget):
         total_profit = sum(sale[7] for sale in sales if sale[7] is not None) if sales else 0
     
         # Display totals in the status label
+        self.status_label.setStyleSheet(f"""
+            color: {self.colors['text_primary']}; 
+            padding: 12px;
+            background-color: {self.colors['background_alt']};
+            border-top: 1px solid {self.colors['border']};
+            border-radius: 0px 0px 8px 8px;
+            font-weight: bold;
+        """)
+        
+        # Add icons to the status message
         self.status_label.setText(
-            f"Summary: {len(sales)} sales, Total: ${total_sales:.2f}, "
-            f"Total Profit: ${total_profit:.2f}"
+            f"📊 Summary: {len(sales)} sales  |  💰 Total Revenue: ${total_sales:.2f}  |  "
+            f"{'📈' if total_profit >= 0 else '📉'} Total Profit: ${total_profit:.2f}"
         )
         
     def load_summary(self):

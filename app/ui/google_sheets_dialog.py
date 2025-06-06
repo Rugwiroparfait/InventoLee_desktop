@@ -6,7 +6,6 @@ from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QFont, QIcon
 import os
 from app.utils.google_sheets_sync import GoogleSheetsSync
-
 class GoogleSheetsDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -115,23 +114,23 @@ class GoogleSheetsDialog(QDialog):
         tabs.addTab(sales_tab, "Sales Settings")
         layout.addWidget(tabs)
         
-        # Credential file section
-        creds_group = QGroupBox("Credentials")
-        creds_layout = QVBoxLayout(creds_group)
+        # Authentication and credentials section
+        auth_group = QGroupBox("Google Account")
+        auth_layout = QVBoxLayout(auth_group)
         
-        creds_info = QLabel(
-            "To use Google Sheets integration, you need a service account credentials file. "
-            "This file should be named 'credentials.json' and placed in the app/utils directory."
-        )
-        creds_info.setWordWrap(True)
+        self.auth_status = QLabel()
+        auth_layout.addWidget(self.auth_status)
         
+        self.auth_btn = QPushButton("Connect Google Account")
+        self.auth_btn.clicked.connect(self.authenticate_google)
+        auth_layout.addWidget(self.auth_btn)
+        
+        # Add this to the auth_layout
         self.select_creds_btn = QPushButton("Select Credentials File")
         self.select_creds_btn.clicked.connect(self.select_credentials_file)
+        auth_layout.addWidget(self.select_creds_btn)
         
-        creds_layout.addWidget(creds_info)
-        creds_layout.addWidget(self.select_creds_btn)
-        
-        layout.addWidget(creds_group)
+        layout.addWidget(auth_group)
         
         # Buttons
         button_layout = QHBoxLayout()
@@ -144,6 +143,11 @@ class GoogleSheetsDialog(QDialog):
         button_layout.addWidget(self.save_btn)
         button_layout.addWidget(self.cancel_btn)
         layout.addLayout(button_layout)
+        
+        # Help button
+        help_btn = QPushButton("❓ Help: Setting up Google Sheets")
+        help_btn.clicked.connect(self.show_help)
+        layout.addWidget(help_btn)
         
         # Load existing settings
         self.load_settings()
@@ -179,18 +183,27 @@ class GoogleSheetsDialog(QDialog):
     
     def update_status(self):
         """Update the status display based on configuration"""
-        if not self.sheets_sync.client:
+        if not self.sheets_sync.is_authenticated():
             self.status_details.setText(
-                "⚠️ Google Sheets API not configured. Missing or invalid credentials file."
+                "⚠️ Not connected to Google Sheets. Please use the 'Connect Google Account' button below."
             )
             self.status_details.setStyleSheet("color: #B95C50;")  # Error color
             self.sync_inventory_btn.setEnabled(False)
             self.sync_sales_btn.setEnabled(False)
+            self.auth_status.setText("❌ Not connected")
+            self.auth_status.setStyleSheet("color: #B95C50;")
+            self.auth_btn.setText("Connect Google Account")
             return
         
+        # Update auth status
+        self.auth_status.setText("✅ Connected to Google")
+        self.auth_status.setStyleSheet("color: #508569;")  # Success color
+        self.auth_btn.setText("Re-authenticate")
+        
+        # Now check sheet configuration
         if not self.sheets_sync.is_configured():
             self.status_details.setText(
-                "⚙️ Connection to Google API available, but sheet settings incomplete. "
+                "⚙️ Google account connected, but sheet settings incomplete. "
                 "Please configure both inventory and sales spreadsheet IDs."
             )
             self.status_details.setStyleSheet("color: #D28A7A;")  # Warning color
@@ -203,6 +216,12 @@ class GoogleSheetsDialog(QDialog):
             self.status_details.setStyleSheet("color: #508569;")  # Success color
             self.sync_inventory_btn.setEnabled(True)
             self.sync_sales_btn.setEnabled(True)
+    
+    def authenticate_google(self):
+        """Show authentication dialog"""
+        QMessageBox.information(self, "Authentication Info", 
+                           "This version uses service account authentication.\n"
+                           "Please use the 'Select Credentials File' button to select your service account JSON file.")
     
     def select_credentials_file(self):
         """Open file dialog to select and copy credentials file"""
@@ -257,3 +276,113 @@ class GoogleSheetsDialog(QDialog):
             QMessageBox.information(self, "Sync Successful", message)
         else:
             QMessageBox.warning(self, "Sync Failed", message)
+    
+    def show_help(self):
+        """Show instructions for setting up Google Sheets credentials"""
+        help_text = """
+        <h3>How to Set Up Google Sheets Integration</h3>
+        
+        <ol>
+          <li><b>Create a Google Cloud Project</b>
+            <ul>
+              <li>Go to <a href="https://console.cloud.google.com/">Google Cloud Console</a></li>
+              <li>Create a new project or select an existing one</li>
+            </ul>
+          </li>
+          
+          <li><b>Enable the Google Sheets API</b>
+            <ul>
+              <li>In your project, go to "APIs & Services > Library"</li>
+              <li>Search for "Google Sheets API" and enable it</li>
+            </ul>
+          </li>
+          
+          <li><b>Create Service Account Credentials</b>
+            <ul>
+              <li>Go to "APIs & Services > Credentials"</li>
+              <li>Click "Create Credentials" and select "Service Account"</li>
+              <li>Fill in the details and create the account</li>
+              <li>For the service account, go to "Keys" tab</li>
+              <li>Add a new key, select JSON format</li>
+              <li>Download the JSON file - this is your credentials file</li>
+            </ul>
+          </li>
+          
+          <li><b>Share Your Google Sheet</b>
+            <ul>
+              <li>Create a Google Sheet or use an existing one</li>
+              <li>Share the sheet with the service account email from your credentials</li>
+              <li>Give it "Editor" permissions</li>
+            </ul>
+          </li>
+          
+          <li><b>Configure in InventoLee</b>
+            <ul>
+              <li>Click "Select Credentials File" and choose the downloaded JSON file</li>
+              <li>Enter the Spreadsheet ID from your Google Sheet's URL</li>
+              <li>You can use the same spreadsheet for both inventory and sales (with different worksheet names)</li>
+            </ul>
+          </li>
+        </ol>
+        """
+        
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("Google Sheets Integration Help")
+        msg_box.setTextFormat(Qt.TextFormat.RichText)
+        msg_box.setText(help_text)
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg_box.exec()
+    
+    def show_sheet_picker(self, sheet_type):
+        """Show a dialog to pick from available Google Sheets"""
+        if not self.sheets_sync.is_authenticated():
+            QMessageBox.warning(self, "Not Connected", 
+                               "Please connect to Google Sheets first.")
+            return
+        
+        try:
+            # Get list of available sheets
+            client = self.sheets_sync.auth.get_gspread_client()
+            sheets = client.list_spreadsheet_files()
+            
+            if not sheets:
+                QMessageBox.information(self, "No Sheets Found", 
+                                      "No Google Sheets found in your account.\n\n"
+                                      "Please create a new Google Sheet first.")
+                return
+            
+            # Create simple dialog to select a sheet
+            from PySide6.QtWidgets import QDialog, QVBoxLayout, QListWidget, QDialogButtonBox
+            
+            picker = QDialog(self)
+            picker.setWindowTitle("Select Google Sheet")
+            layout = QVBoxLayout(picker)
+            
+            list_widget = QListWidget()
+            for sheet in sheets:
+                list_widget.addItem(sheet['name'])
+            
+            layout.addWidget(QLabel(f"Select a spreadsheet for {sheet_type}:"))
+            layout.addWidget(list_widget)
+            
+            buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+            buttons.accepted.connect(picker.accept)
+            buttons.rejected.connect(picker.reject)
+            layout.addWidget(buttons)
+            
+            if picker.exec():
+                if list_widget.currentRow() >= 0:
+                    selected_sheet = sheets[list_widget.currentRow()]
+                    sheet_id = selected_sheet['id']
+                    
+                    # Update the appropriate field
+                    if sheet_type == 'inventory':
+                        self.inventory_sheet_id.setText(sheet_id)
+                    elif sheet_type == 'sales':
+                        self.sales_sheet_id.setText(sheet_id)
+                    
+                    QMessageBox.information(self, "Sheet Selected", 
+                                         f"Selected sheet: {selected_sheet['name']}")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", 
+                               f"Failed to retrieve sheets: {str(e)}")
